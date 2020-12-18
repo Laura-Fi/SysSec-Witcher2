@@ -77,7 +77,9 @@
                         echo "<p id='commentText'>".$curComment['commentText']."</p>";
                         if ($_SESSION["id"] == $curComment['userId'] || $_SESSION["isAdmin"] == 1) {
                             echo "<div class='card-footer text-center'>";
-                            echo "<a href='incl/deleteComment.incl.php?commentId=".$curComment['commentId']."&postId=".$curPost['postId']."' class='card-link'>Delete</a>";
+                            ?>
+                            <a href=<?php echo "incl/deleteComment.incl.php?commentId=".$curComment['commentId']."&postId=".$curPost['postId']?> class="card-link" onclick="return confirm('Are you sure you want to delete this comment?');">Delete</a>
+                            <?php
                             echo "</div>";
                         }
                         echo "</div>";
