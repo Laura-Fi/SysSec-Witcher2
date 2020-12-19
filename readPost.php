@@ -1,42 +1,44 @@
 <?php
     require_once('incl/session.php');
     require_once('incl/dbConnect.php');
+    include('incl/addComment.incl.php');
 
-    /*
-    if (!(is_numeric($_REQUEST["postId"]) && intval($_REQUEST["parkId"]) >= 1 && intval($_REQUEST["parkId"]) <= 24)){
+
+    $postId = $_REQUEST['postId']; 
+    //var_dump($postId);
+
+    if (!(is_numeric($postId))) {
         header('location: oops.html');
         exit;
-    }*/
-
-    $postId = ($_REQUEST['postId']);
-    $postsQuery = "select * from posts,users where userId = id and postId =".$postId;
-    // make sure it is an integer
-    //$query = "SELECT * FROM posts where postId = " . intval($_REQUEST["postId"]);
-    //
-    $postsResult = $mysqli->query($postsQuery);
-    $curPost = mysqli_fetch_array($postsResult);
+    } 
+    $postsQuery = "select * from posts,users where userId = id and postId =?;";
+    $stmtPost = $mysqli->stmt_init();
+    if (!$stmtPost->prepare($postsQuery)) {
+        echo "SQL failed";
+    } else {
+        $stmtPost->bind_param( "i", $postId);
+        $stmtPost->execute();
+        $postsResult = $stmtPost->get_result();
+        if ($postsResult->num_rows != 1) {
+            header('location: oops.html');
+            exit;
+        } else {
+            $curPost = $postsResult->fetch_array();
+        }
+    }
+    
     //var_dump($postsResult);
 
-    //$commentUserId = ($_REQUEST['userId']);
-    $commentQuery = "select * from comments,users where postId =".$postId." and userId = id"; 
-    $commentResult = $mysqli->query($commentQuery);
-    $commentResultShow = $mysqli->query($commentQuery); //what the hell?!?! 
-    $curComment = mysqli_fetch_array($commentResult);
-    //var_dump($commentResult);
-
-    if($_SERVER["REQUEST_METHOD"] == "POST"){
-        require_once('incl/dbConnect.php');
-
-        $userId = $_SESSION['id'];
-        $commentPostId = $postId;
-        $commentText = $_POST['commentText'];
-
-        $query = "insert into comments(userId, commentDate, postId, commentText) 
-        values ('$userId', CURRENT_TIMESTAMP, '$postId', '$commentText');";
-        $mysqli->query($query);  
-
-        header("Location: readPost.php?postId=".$_REQUEST['postId']);  
+    $commentQuery = "select * from comments,users where userId = id and postId =?;";
+    $stmtComment = $mysqli->stmt_init();
+    if (!$stmtComment->prepare($commentQuery)) {
+        echo "SQL failed";
+    } else {
+        $stmtComment->bind_param( "i", $postId);
+        $stmtComment->execute();
+        $commentResultShow = $stmtComment->get_result();  
     }
+
 ?>
 
 <html>
@@ -58,7 +60,6 @@
             <img src="img/<?php echo $curPost['postImage']?>" class="img-fluid" alt="Responsive image">
             <h1><?php echo $curPost['postName']?></h1>
             <h5 class="text-secondary">by <?php echo $curPost['firstName']." ".$curPost['lastName']." | ".(new DateTime ($curPost['postDate']))->format('d.m.Y')?></h2>
-            <!--<a href="logout.php" id="logoutLink">Logout</a>-->
             <br>
             <p><?php echo $curPost['postText']?></p>
             <br>
@@ -66,11 +67,11 @@
         <div>
             <h2>Comments:</h2>
             <?php
-                if ($curComment == 0) {
+                if (!($curComment = $commentResultShow->fetch_array())) {
                     echo "<br>";
                     echo "<h5>No comments yet!</h5>";
                 } else {
-                    while ($curComment = mysqli_fetch_array($commentResultShow)) {
+                    do {
                         echo "<div class='container' id='commentContainer'>";
                         echo "<div class='comment'>";
                         echo "<p class='text-primary' id='commentHeading'>".$curComment['firstName']." ".$curComment['lastName']." | ".(new DateTime ($curComment['commentDate']))->format('d.m.Y')."<br>";
@@ -85,7 +86,8 @@
                         echo "</div>";
                         echo "</div>";
                     }
-                }
+                    while ($curComment = $commentResultShow->fetch_array());
+                }   
             ?>
         </div>
         <div>

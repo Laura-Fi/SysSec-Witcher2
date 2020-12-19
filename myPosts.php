@@ -4,9 +4,17 @@
     require_once('navbar.php');
 
 
-    //TO DO
-    $postsQuery = "select postId,postImage,postName from posts where userId =" . $_SESSION["id"];
-    $postsResult = $mysqli->query($postsQuery);
+    //prepared statements
+    $userId = $_SESSION["id"];
+    $postsQuery = "select postId,postImage,postName from posts where userId =?;";
+    $stmt = $mysqli->stmt_init();
+    if (!($stmt->prepare($postsQuery))) {
+        echo "SQL failed";
+    } else {
+        $stmt->bind_param('i', $userId);
+        $stmt->execute();
+        $postsResult = $stmt->get_result();
+    }
     //var_dump($postsResult);
 ?>
 
@@ -27,11 +35,11 @@
         <h2>These are your posts so far:</h1>
         <br>
         <?php
-            if (mysqli_num_rows($postsResult) == 0) {
+            if (($postsResult->num_rows) == 0) {
                 echo "<h5>No posts yet!</h5>";
             }
             echo "<div class='card-deck'>";
-            while($curPost = mysqli_fetch_array($postsResult)) {
+            while($curPost = $postsResult->fetch_array()) {
                 echo "<div class='col-sm-4'>";
                 echo "<div class='card'>";
                 echo "<img src=img/".$curPost['postImage']." class='card-img-top' style=alt=''>";

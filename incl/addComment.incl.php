@@ -1,31 +1,35 @@
 <?php
-    require_once('incl/session.php');
+    require_once('session.php');
+    require_once('dbConnect.php');
 
-    //$postDate = date('Y-m-d H:i:s');
-    
+    $userId = $commentDate = $postId = $commentText = "";
+
     if($_SERVER["REQUEST_METHOD"] == "POST"){
-        require_once('incl/dbConnect.php');
-
-        $userId = $_SESSION['userId'];
-        $commentDate = CURRDATE();
+        $userId = $_SESSION['id'];
+        $commentDate = date("Y-m-d"); 
         $postId = $_REQUEST['postId'];
-        $commentText = $_POST['commentText'];
+        $commentText = test_input($_POST['commentText']);
 
-        /*
-        // Select file type
-        $imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
-        // Valid file extensions
-        $extensions_arr = array("jpg","jpeg","png","gif");
-        // Check extension
-        if( in_array($imageFileType,$extensions_arr) ){
-            // Upload file
-            move_uploaded_file($_FILES['file']['tmp_name'],$target_dir.$name);
-        */
+        $comQuery = "INSERT INTO comments (userId, commentDate, postId, commentText) VALUES ( ?, ?, ?, ?);";
+        $stmtCom = $mysqli->stmt_init();        
+        if ($stmtCom->prepare($comQuery)) {
+            $stmtCom->bind_param('isis', $userId, $commentDate, $postId, $commentText);
+            $stmtCom->execute();
+        } else {
+            echo "SQL failed";
+        }
+        header("Location: readPost.php?postId=".$_REQUEST['postId']);
+        $mysqli->close();
+        }
 
-        $query = "insert into comments(userId, commentDate, postId, commentText) 
-        values ('$userId', '$commentDate', '$postId', '$commentText');";
-        $mysqli->query($query);  
 
-        header("Location: readPost.php?postId=".$curComment["postId"]);  
-    }     
+    //echo $mysqli->error; 
+
+    function test_input($data){
+        $data = trim($data);
+        $data = stripslashes($data);
+        $data = htmlspecialchars($data);
+        return $data;
+    }
+
 ?>
